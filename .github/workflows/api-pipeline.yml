@@ -25,17 +25,17 @@ jobs:
 
       - name: Add Dev Environment
         run: |
-          apictl add env dev             --apim https://${{ secrets.WSO2_DEV_APIM }}
+          apictl add env dev --apim https://${{ secrets.WSO2_DEV_APIM }}
 
 
       - name: Login to Dev
         run: |
-          apictl login dev -u ${{ secrets.APIM_USERNAME }} -p ${{ secrets.APIM_PASSWORD }} -k
+          apictl login dev -u ${{secrets.APIM_USERNAME}} -p ${{secrets.APIM_PASSWORD}} -k
 
 
       - name: Import API to Dev
         run: |
-          apictl import api -f ProductAPI/ -e dev --preserve-provider=false -k --update
+          apictl import api -f PizzAPI/ -e dev --preserve-provider=false -k --update
       - name: Run Tests (Optional)
         run: apictl get apis -e dev --insecure | awk 'NR>1 {print}' | grep -E "ShopKartProductAPI" || {echo "ShopKartProductAPI not found in Publisher (dev)."exit 1
     }
