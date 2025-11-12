@@ -6,13 +6,20 @@ on:
       - '.github/workflows/**'
     branches:
       - main
+
 jobs:
   deploy-api-dev:
     runs-on: ubuntu-latest
-    if: ${{ contains(github.event.head_commit.message, 'dev') || github.event_name == 'push' }}
+    # Removed the redundant 'if: ${{ ... || github.event_name == 'push' }}'
+    # Use this line only if you truly want to restrict the run based on commit message:
+    # if: ${{ contains(github.event.head_commit.message, 'dev') }}
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          # Optimization: Fetch only the current commit
+          fetch-depth: 1 
 
 
       - name: Install apictl
@@ -25,17 +32,24 @@ jobs:
 
       - name: Add Dev Environment
         run: |
+          # The secrets should be correctly escaped within the shell context
           apictl add env dev --apim https://${{ secrets.WSO2_DEV_APIM }}
 
 
       - name: Login to Dev
         run: |
-          apictl login dev -u ${{secrets.APIM_USERNAME}} -p ${{secrets.APIM_PASSWORD}} -k
+          apictl login dev -u ${{ secrets.APIM_USERNAME }} -p ${{ secrets.APIM_PASSWORD }} -k
 
 
       - name: Import API to Dev
         run: |
           apictl import api -f PizzAPI/ -e dev --preserve-provider=false -k --update
+
+
       - name: Run Tests (Optional)
-        run: apictl get apis -e dev --insecure | awk 'NR>1 {print}' | grep -E "ShopKartProductAPI" || {echo "ShopKartProductAPI not found in Publisher (dev)."exit 1
-    }
+        run: |
+          # Corrected shell syntax and added $1 to awk to print only the API name column
+          apictl get apis -e dev --insecure | awk 'NR>1 {print $1}' | grep -E "ShopKartProductAPI" || { \
+            echo "ShopKartProductAPI not found in Publisher (dev)."; \
+            exit 1; \
+          }
